@@ -18,7 +18,7 @@ module.exports = async (client, commands, debug) => {
 
     log(`Created ${newCommands.length} commands!`);
 
-    const deletedCommands = client.application.commands.cache.filter((command) => !commands.some((c) => c.name === command.name));
+    const deletedCommands = client.application.commands.cache.filter((command) => !commands.some((c) => c.name === command.name)).toJSON();
     for (let deletedCommand of deletedCommands) {
         await deletedCommand.delete();
     }
