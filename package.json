@@ -3,7 +3,7 @@
     "discord.js": "discordjs/discord.js#refs/pull/6414/head"
   },
   "name": "discord-sync-commands",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Easily keep your bot's slash commands synchronized with Discord",
   "main": "index.js",
   "repository": "https://github.com/Androz2091/discord-sync-commands",
