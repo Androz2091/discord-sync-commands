@@ -23,7 +23,7 @@ module.exports = async (client, commands, debug) => {
         await deletedCommand.delete();
     }
 
-    log(`Deleted ${deletedCommands.size} commands!`);
+    log(`Deleted ${deletedCommands.length} commands!`);
 
     const updatedCommands = commands.filter((command) => client.application.commands.cache.some((c) => c.name === command.name));
     let updatedCommandCount = 0;
