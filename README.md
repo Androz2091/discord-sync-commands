@@ -4,8 +4,8 @@ Easily keep your bot's slash commands synchronized with Discord! 🔁
 
 ## Features
 
-⚡ No useless calls to the Discord API!
-❗ Auto detection of changes in your commands!
+⚡ No useless calls to the Discord API!  
+❗ Auto detection of changes in your commands!  
 🤟 Super easy to use!
 
 ## Example
