@@ -1,0 +1,12 @@
+{
+  "dependencies": {
+    "discord.js": "discordjs/discord.js#refs/pull/6414/head"
+  },
+  "name": "discord-sync-commands",
+  "version": "1.0.0",
+  "description": "Easily keep your bot's slash commands synchronized with Discord",
+  "main": "index.js",
+  "repository": "https://github.com/Androz2091/discord-sync-commands",
+  "author": "Androz2091 <androz2091@gmail.com>",
+  "license": "MIT"
+}
