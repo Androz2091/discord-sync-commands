@@ -7,8 +7,7 @@ module.exports = async (client, commands, options = {
 
     const log = (message) => options.debug && console.log(message);
 
-    const ready = client.readyAt ? Promise.resolve() : new Promise(resolve => client.once('ready', resolve));
-    await ready;
+    const ready = await client.readyAt ? Promise.resolve() : new Promise(resolve => client.once('ready', resolve));
     const currentCommands = await client.application.commands.fetch(options.guildId && { guildId: options.guildId });
 
     log(`Synchronizing commands...`);
