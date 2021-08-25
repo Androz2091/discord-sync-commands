@@ -22,7 +22,10 @@ synchronizeSlashCommands(client, [
         name: 'ping',
         description: 'Check whether the bot is working'
     }
-]);
+], {
+    debug: true,
+    guildId: '558328638911545423' // remove this property to use global commands
+});
 
 client.on('ready', () => {
     console.log('Ready!');
