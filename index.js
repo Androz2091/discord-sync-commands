@@ -46,4 +46,11 @@ module.exports = async (client, commands, options = {
 
     log(`Commands synchronized!`);
 
+    return {
+        currentCommandCount: currentCommands.size,
+        newCommandCount: newCommands.length,
+        deletedCommandCount: deletedCommands.length,
+        updatedCommandCount
+    };
+
 };
