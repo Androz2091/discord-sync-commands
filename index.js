@@ -9,7 +9,13 @@ module.exports = async (client, commands, options = {
 
     const ready = client.readyAt ? Promise.resolve() : new Promise(resolve => client.once('ready', resolve));
     await ready;
-    const currentCommands = await client.application.commands.fetch(options.guildId && { guildId: options.guildId });
+    const currentCommands = await client.application.commands
+        .fetch(options.guildId && { guildId: options.guildId })
+        .catch(err => {
+            throw new Error(
+                err.code === 50001 ? 'The client does not have the "applications.commands" scope authorized.' : err
+            );
+        });
 
     log(`Synchronizing commands...`);
     log(`Currently ${currentCommands.size} commands.`);
