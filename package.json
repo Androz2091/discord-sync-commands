@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "discord.js": "discordjs/discord.js#refs/pull/6414/head"
+    "discord.js": "^14.20.0"
   },
   "name": "discord-sync-commands",
   "version": "0.3.0",
