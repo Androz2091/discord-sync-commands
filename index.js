@@ -1,67 +1,123 @@
-const Discord = require('discord.js');
+const { Client, RESTJSONErrorCodes, ApplicationCommand, Events } = require('discord.js');
 
+/**
+ * Discord slash commands synchronization utility
+ * @param {Client} client - Discord.js client instance
+ * @param {Array<Object>} commands - Array of command objects to synchronize
+ * @param {Object} options - Configuration options
+ * @param {boolean} [options.debug=false] - Enable debug logging
+ * @param {string|null} [options.guildId=null] - Guild ID for guild-specific commands (null for global commands)
+ * @returns {Promise<Object>} Synchronization results with counts
+ * @throws {TypeError} When client is not a Client instance or commands is not an array
+ * @throws {Error} When client application is not available
+ * @example
+ * const syncCommands = require('discord-sync-commands');
+ * 
+ * const commands = [
+ *   {
+ *     name: 'ping',
+ *     description: 'Replies with Pong!',
+ *     type: ApplicationCommandType.ChatInput
+ *   }
+ * ];
+ * 
+ * const result = await syncCommands(client, commands, { debug: true });
+ * console.log(`Created: ${result.newCommandCount}, Updated: ${result.updatedCommandCount}`);
+ */
 module.exports = async (client, commands, options = {
     debug: false,
     guildId: null
 }) => {
-    const log = (message) => options.debug && console.log(message);
+    if (!(client instanceof Client)) {
+        throw new TypeError('Client instance is required');
+    };
+
+    if (!Array.isArray(commands)) {
+        throw new TypeError('Commands must be an array');
+    };
+
+    /**
+     * Debug logging function
+     * @param {string} message - Message to log if debug is enabled
+     */
+    const log = (message) => options.debug && console.log(`[discord-sync-commands] ${message}`);
 
     try {
-        const ready = client.isReady() ? Promise.resolve() : new Promise(resolve => client.once('ready', resolve));
+        /**
+         * Wait for client to be ready if not already ready
+         */
+        const ready = client.isReady() ? Promise.resolve() : new Promise(resolve => client.once(Events.ClientReady, resolve));
         await ready;
 
+        /**
+         * Fetch existing commands from Discord API
+         * @type {Collection<string, ApplicationCommand>}
+         */
         const currentCommands = await client.application.commands
-            .fetch(options.guildId && { guildId: options.guildId })
+            .fetch(options.guildId ? { guildId: options.guildId } : {})
             .catch(err => {
-                throw new Error(
-                    err.code === 50001 ? 'The client does not have the "applications.commands" scope authorized.' : err
-                );
+                if (err.code === RESTJSONErrorCodes.MissingAccess) {
+                    throw new Error('The client does not have the "applications.commands" scope authorized.');
+                }
+                throw err;
             });
 
         log(`Synchronizing commands...`);
-        log(`Currently ${currentCommands.size} commands.`);
+        log(`Currently ${currentCommands.size} commands registered.`);
 
+        /**
+         * Find commands that need to be created (exist in local but not in Discord)
+         * @type {Array<Object>}
+         */
         const newCommands = commands.filter((command) => !currentCommands.some((c) => c.name === command.name));
         let createdCount = 0;
-        for (let newCommand of newCommands) {
+        
+        for (const newCommand of newCommands) {
             try {
                 await client.application.commands.create(newCommand, options.guildId);
                 createdCount++;
+                log(`Created command: ${newCommand.name}`);
             } catch (error) {
                 log(`Error creating command ${newCommand.name}: ${error.message}`);
             }
         }
 
-        log(`Created ${createdCount} commands!`);
+        log(`Created ${createdCount} new commands!`);
 
+        /**
+         * Find commands that need to be deleted (exist in Discord but not in local)
+         * @type {Collection<string, ApplicationCommand>}
+         */
         const deletedCommands = currentCommands.filter((command) => !commands.some((c) => c.name === command.name));
         let deletedCount = 0;
-        for (let deletedCommand of deletedCommands.values()) {
+        
+        for (const deletedCommand of deletedCommands.values()) {
             try {
                 await deletedCommand.delete();
                 deletedCount++;
+                log(`Deleted command: ${deletedCommand.name}`);
             } catch (error) {
                 log(`Error deleting command ${deletedCommand.name}: ${error.message}`);
             }
         }
 
-        log(`Deleted ${deletedCount} commands!`);
+        log(`Deleted ${deletedCount} obsolete commands!`);
 
+        /**
+         * Find commands that need to be updated (exist in both but with differences)
+         * @type {Array<Object>}
+         */
         const updatedCommands = commands.filter((command) => currentCommands.some((c) => c.name === command.name));
         let updatedCommandCount = 0;
-        for (let updatedCommand of updatedCommands) {
+        
+        for (const updatedCommand of updatedCommands) {
             try {
-                const newCommand = updatedCommand;
                 const previousCommand = currentCommands.find((c) => c.name === updatedCommand.name);
-                let modified = false;
-
-                if (previousCommand.description !== newCommand.description) modified = true;
-
-                if (!compareOptions(previousCommand.options ?? [], newCommand.options ?? [])) modified = true;
-
-                if (modified) {
-                    await previousCommand.edit(newCommand);
+                
+                if (isCommandModified(previousCommand, updatedCommand)) {
+                    await previousCommand.edit(updatedCommand);
                     updatedCommandCount++;
+                    log(`Updated command: ${updatedCommand.name}`);
                 }
             } catch (error) {
                 log(`Error updating command ${updatedCommand.name}: ${error.message}`);
@@ -69,7 +125,7 @@ module.exports = async (client, commands, options = {
         }
 
         log(`Updated ${updatedCommandCount} commands!`);
-        log(`Commands synchronized!`);
+        log(`Command synchronization completed successfully!`);
 
         return {
             currentCommandCount: currentCommands.size,
@@ -84,44 +140,19 @@ module.exports = async (client, commands, options = {
     }
 };
 
-function compareOptions(existingOptions, newOptions) {
-    if (existingOptions.length !== newOptions.length) return false;
-
-    for (let i = 0; i < existingOptions.length; i++) {
-        const existing = existingOptions[i];
-        const newOpt = newOptions[i];
-
-        if (existing.name !== newOpt.name) return false;
-        if (existing.description !== newOpt.description) return false;
-        if (existing.type !== newOpt.type) return false;
-        if ((existing.required ?? false) !== (newOpt.required ?? false)) return false;
-
-        if (existing.choices && newOpt.choices) {
-            if (!compareChoices(existing.choices, newOpt.choices)) return false;
-        } else if (existing.choices || newOpt.choices) {
-            return false;
-        }
-
-        if (existing.options && newOpt.options) {
-            if (!compareOptions(existing.options, newOpt.options)) return false;
-        } else if (existing.options || newOpt.options) {
-            return false;
-        }
-    }
-
-    return true;
+/**
+ * Check if a command has been modified by comparing all relevant properties
+ * @param {ApplicationCommand} previousCommand - The existing command from Discord
+ * @param {Object} newCommand - The new command definition
+ * @returns {boolean} True if the command needs to be updated
+ */
+function isCommandModified(previousCommand, newCommand) {
+    if (previousCommand.description !== newCommand.description) return true;
+    if (previousCommand.defaultMemberPermissions !== newCommand.defaultMemberPermissions) return true;
+    if (previousCommand.nsfw !== newCommand.nsfw) return true;
+    
+    // Use Discord.js built-in optionsEqual method for more reliable comparison
+    return !ApplicationCommand.optionsEqual(previousCommand.options ?? [], newCommand.options ?? []);
 }
 
-function compareChoices(existingChoices, newChoices) {
-    if (existingChoices.length !== newChoices.length) return false;
 
-    for (let i = 0; i < existingChoices.length; i++) {
-        const existing = existingChoices[i];
-        const newChoice = newChoices[i];
-
-        if (existing.name !== newChoice.name) return false;
-        if (existing.value !== newChoice.value) return false;
-    }
-
-    return true;
-}
