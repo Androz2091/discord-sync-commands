@@ -49,6 +49,7 @@ module.exports = async (client, commands, options = {
         const ready = client.isReady() ? Promise.resolve() : new Promise(resolve => client.once(Events.ClientReady, resolve));
         await ready;
 
+
         /**
          * Fetch existing commands from Discord API
          * @type {Collection<string, ApplicationCommand>}
@@ -60,7 +61,6 @@ module.exports = async (client, commands, options = {
                     throw new Error('The client does not have the "applications.commands" scope authorized.');
                 }
                 throw err;
-            });
 
         log(`Synchronizing commands...`);
         log(`Currently ${currentCommands.size} commands registered.`);
