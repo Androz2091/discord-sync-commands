@@ -63,6 +63,7 @@ module.exports = async (client, commands, options = {
                 throw err;
             });
 
+
         log(`Synchronizing commands...`);
         log(`Currently ${currentCommands.size} commands registered.`);
 
