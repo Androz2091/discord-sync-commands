@@ -61,6 +61,7 @@ module.exports = async (client, commands, options = {
                     throw new Error('The client does not have the "applications.commands" scope authorized.');
                 }
                 throw err;
+            });
 
         log(`Synchronizing commands...`);
         log(`Currently ${currentCommands.size} commands registered.`);
