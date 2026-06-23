@@ -1,6 +1,9 @@
 {
-  "dependencies": {
+  "devDependencies": {
     "discord.js": "^14.20.0"
+  },
+  "peerDependencies": {
+    "discord.js": "14.x"
   },
   "name": "discord-sync-commands",
   "version": "0.5.2",
